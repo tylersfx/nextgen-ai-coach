@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Play, Upload, Target, Award, Calendar, 
-  TrendingUp, Users, ArrowRight, Edit2 
+  TrendingUp, Users, ArrowRight, Edit2, Lock 
 } from 'lucide-react';
 import { parseGSProCSV } from '../lib/csvParser';
 import { analyzeSwing, generateTrainingPlan } from '../lib/analysisEngine';
@@ -70,7 +70,7 @@ export default function NextGenAICoach() {
     setProfile(null);
   };
 
-  // Save new name to profile
+  // Save new name
   const saveProfileName = async () => {
     if (!user || !newName.trim()) return;
 
@@ -88,12 +88,13 @@ export default function NextGenAICoach() {
     }
   };
 
-  // Display name logic
   const displayName = profile?.full_name || user?.email || "User";
+  const membershipType = profile?.membership_type || 'Club Member';
+  const isClubLegend = membershipType === 'Club Legend';
 
   const member = {
-    name: "Tyler",
-    membership: "Club Legend",
+    name: displayName,
+    membership: membershipType,
     sessionsThisMonth: 8,
     avgClubSpeed: 94.2,
     currentHandicap: 8.4,
@@ -102,6 +103,10 @@ export default function NextGenAICoach() {
   const bays = [1, 2, 3, 4, 5];
 
   const startSession = (bay: number) => {
+    if (bay === 5 && !isClubLegend) {
+      alert("Bay 5 is available for Club Legend members only.");
+      return;
+    }
     setSelectedBay(bay);
     setCurrentView('session');
     setVideoBlob(null);
@@ -170,34 +175,34 @@ export default function NextGenAICoach() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
-      {/* Header */}
+      {/* Header - Improved for mobile to reduce spilling */}
       <header className="border-b border-white/10 bg-black/50 backdrop-blur-lg sticky top-0 z-50">
-        <div className="max-w-5xl mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <img src="/logo.png" alt="NextGen Golf Lounge" className="h-12 w-12" />
-            <div>
-              <div className="font-semibold text-2xl tracking-tight">NextGen AI Coach</div>
-              <div className="text-xs text-white/60 -mt-1">POWERED BY PROTEE VX + GSPRO</div>
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-3 min-w-0">
+            <img src="/logo.png" alt="NextGen Golf Lounge" className="h-9 w-9 sm:h-12 sm:w-12 flex-shrink-0" />
+            <div className="min-w-0">
+              <div className="font-semibold text-xl sm:text-2xl tracking-tight truncate">NextGen AI Coach</div>
+              <div className="text-[10px] sm:text-xs text-white/60 -mt-0.5 truncate">POWERED BY PROTEE VX + GSPRO</div>
             </div>
           </div>
 
-          {/* Auth + Profile Section */}
-          <div className="flex items-center gap-4 text-sm">
+          {/* Auth + Profile Section - More compact on mobile */}
+          <div className="flex items-center gap-2 sm:gap-4 text-sm flex-shrink-0">
             {user ? (
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <button 
                   onClick={() => {
                     setNewName(profile?.full_name || '');
                     setShowProfileModal(true);
                   }}
-                  className="flex items-center gap-2 text-white/80 hover:text-white"
+                  className="flex items-center gap-1.5 text-white/80 hover:text-white text-sm sm:text-base max-w-[140px] truncate"
                 >
-                  {displayName}
-                  <Edit2 className="w-3.5 h-3.5" />
+                  <span className="truncate">{displayName}</span>
+                  <Edit2 className="w-3.5 h-3.5 flex-shrink-0" />
                 </button>
                 <button 
                   onClick={handleLogout}
-                  className="px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-full text-sm"
+                  className="px-2.5 py-1 sm:px-3 sm:py-1.5 bg-white/10 hover:bg-white/20 rounded-full text-xs sm:text-sm whitespace-nowrap"
                 >
                   Log Out
                 </button>
@@ -205,91 +210,105 @@ export default function NextGenAICoach() {
             ) : (
               <button 
                 onClick={() => setShowAuthModal(true)}
-                className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
+                className="px-3 py-1.5 sm:px-4 sm:py-2 bg-white/10 hover:bg-white/20 rounded-full text-xs sm:text-sm whitespace-nowrap"
               >
                 Log In / Sign Up
               </button>
             )}
 
-            <div className="px-4 py-1.5 bg-white/5 rounded-full flex items-center gap-2">
-              <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
-              {member.membership}
+            <div className="px-2.5 py-1 sm:px-4 sm:py-1.5 bg-white/5 rounded-full flex items-center gap-1.5 text-xs sm:text-sm whitespace-nowrap">
+              <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-emerald-400 rounded-full animate-pulse" />
+              {membershipType}
             </div>
           </div>
         </div>
       </header>
 
-      <div className="max-w-5xl mx-auto px-6 py-8">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {/* DASHBOARD VIEW */}
         {currentView === 'dashboard' && (
           <div>
-            <div className="flex justify-between items-end mb-8">
+            <div className="flex justify-between items-end mb-6 sm:mb-8">
               <div>
-                <h1 className="text-5xl font-semibold tracking-tighter">Ready to improve?</h1>
-                <p className="text-xl text-white/70 mt-2">Your last session showed strong contact. Let's build on it.</p>
+                <h1 className="text-4xl sm:text-5xl font-semibold tracking-tighter">Ready to improve?</h1>
+                <p className="text-lg sm:text-xl text-white/70 mt-1 sm:mt-2">Your last session showed strong contact. Let's build on it.</p>
               </div>
-              <div className="text-right">
+              <div className="text-right hidden sm:block">
                 <div className="text-emerald-400 text-sm font-medium">THIS MONTH</div>
                 <div className="text-4xl font-semibold">{member.sessionsThisMonth} <span className="text-lg text-white/60">sessions</span></div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-10">
-              <div className="bg-white/5 rounded-2xl p-6">
-                <div className="flex items-center gap-3 text-emerald-400 mb-2">
-                  <TrendingUp className="w-5 h-5" /> Avg Club Speed
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+              <div className="bg-white/5 rounded-2xl p-5 sm:p-6">
+                <div className="flex items-center gap-3 text-emerald-400 mb-2 text-sm">
+                  <TrendingUp className="w-4 h-4" /> Avg Club Speed
                 </div>
-                <div className="text-4xl font-semibold">{member.avgClubSpeed} <span className="text-lg">mph</span></div>
+                <div className="text-3xl sm:text-4xl font-semibold">{member.avgClubSpeed} <span className="text-base">mph</span></div>
               </div>
-              <div className="bg-white/5 rounded-2xl p-6">
-                <div className="flex items-center gap-3 text-emerald-400 mb-2">
-                  <Target className="w-5 h-5" /> Handicap
+              <div className="bg-white/5 rounded-2xl p-5 sm:p-6">
+                <div className="flex items-center gap-3 text-emerald-400 mb-2 text-sm">
+                  <Target className="w-4 h-4" /> Handicap
                 </div>
-                <div className="text-4xl font-semibold">{member.currentHandicap}</div>
+                <div className="text-3xl sm:text-4xl font-semibold">{member.currentHandicap}</div>
               </div>
-              <div className="bg-white/5 rounded-2xl p-6 col-span-2">
-                <div className="text-emerald-400 text-sm mb-3">CURRENT TRAINING FOCUS</div>
-                <div className="text-2xl">Improve dispersion & maintain posture through impact</div>
+              <div className="bg-white/5 rounded-2xl p-5 sm:p-6 col-span-1 sm:col-span-2 lg:col-span-2">
+                <div className="text-emerald-400 text-xs sm:text-sm mb-2">CURRENT TRAINING FOCUS</div>
+                <div className="text-lg sm:text-xl">Improve dispersion & maintain posture through impact</div>
               </div>
             </div>
 
             <div className="mb-6">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-2">
                 <h2 className="text-2xl font-semibold">Start a Session</h2>
-                <div className="text-sm text-white/60">5 bays available • ProTee VX + GSPro</div>
+                <div className="text-xs sm:text-sm text-white/60">5 bays available • ProTee VX + GSPro</div>
               </div>
               
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                {bays.map(bay => (
-                  <button
-                    key={bay}
-                    onClick={() => startSession(bay)}
-                    className="group bg-white/5 hover:bg-emerald-500/10 border border-white/10 hover:border-emerald-500/50 rounded-2xl p-8 text-left transition-all active:scale-[0.985]"
-                  >
-                    <div className="flex justify-between items-start">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                {bays.map(bay => {
+                  const isBay5 = bay === 5;
+                  const canAccess = !isBay5 || isClubLegend;
+
+                  return (
+                    <button
+                      key={bay}
+                      onClick={() => startSession(bay)}
+                      disabled={!canAccess}
+                      className={`group rounded-2xl p-6 sm:p-8 text-left transition-all active:scale-[0.985] border flex flex-col justify-between h-full ${
+                        canAccess 
+                          ? 'bg-white/5 hover:bg-emerald-500/10 border-white/10 hover:border-emerald-500/50' 
+                          : 'bg-white/5 border-white/10 opacity-60 cursor-not-allowed'
+                      }`}
+                    >
                       <div>
-                        <div className="text-6xl font-semibold text-white/90 group-hover:text-emerald-400 transition-colors">Bay {bay}</div>
-                        <div className="text-emerald-400 text-sm mt-1">Ready now</div>
+                        <div className="flex items-center justify-between">
+                          <div className="text-5xl sm:text-6xl font-semibold text-white/90 group-hover:text-emerald-400 transition-colors">
+                            Bay {bay}
+                          </div>
+                          {isBay5 && !isClubLegend && <Lock className="w-5 h-5 text-white/40" />}
+                        </div>
+                        <div className="text-emerald-400 text-sm mt-1">
+                          {canAccess ? "Ready now" : "Club Legend only"}
+                        </div>
                       </div>
-                      <Play className="w-8 h-8 text-white/40 group-hover:text-emerald-400 mt-2 transition-colors" />
-                    </div>
-                  </button>
-                ))}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>
         )}
 
-        {/* SESSION + ANALYSIS VIEWS */}
+        {/* SESSION + ANALYSIS VIEWS (shortened for brevity - keep your existing full code here if needed) */}
         {currentView === 'session' && selectedBay && (
           <div className="max-w-2xl mx-auto">
-            {/* Keep your existing session view code here */}
+            {/* Paste your existing session view code here */}
           </div>
         )}
 
         {currentView === 'analysis' && analysis && trainingPlan && (
           <div className="max-w-3xl mx-auto">
-            {/* Keep your existing analysis view code here */}
+            {/* Paste your existing analysis view code here */}
           </div>
         )}
       </div>
@@ -316,6 +335,9 @@ export default function NextGenAICoach() {
                   className="w-full bg-black/40 border border-white/20 rounded-xl p-4 text-white"
                   placeholder="Enter your name"
                 />
+              </div>
+              <div className="text-xs text-white/60">
+                Current membership: <span className="text-emerald-400">{membershipType}</span>
               </div>
             </div>
 
