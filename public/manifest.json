@@ -1,0 +1,16 @@
+{
+  "name": "NextGen AI Coach",
+  "short_name": "NextGen Coach",
+  "description": "AI golf training powered by your ProTee VX + GSPro sessions at NextGen Golf Lounge",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#166534",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}
