@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Play, Upload, Target, Award, Calendar, 
-  TrendingUp, Users, ArrowRight 
+  TrendingUp, Users, ArrowRight, Edit2 
 } from 'lucide-react';
 import { parseGSProCSV } from '../lib/csvParser';
 import { analyzeSwing, generateTrainingPlan } from '../lib/analysisEngine';
@@ -23,8 +23,10 @@ export default function NextGenAICoach() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [newName, setNewName] = useState('');
 
-  // Fetch user + profile when app loads or auth changes
+  // Fetch user + profile
   useEffect(() => {
     const getUserAndProfile = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -68,7 +70,27 @@ export default function NextGenAICoach() {
     setProfile(null);
   };
 
-  // Simulated member data
+  // Save new name to profile
+  const saveProfileName = async () => {
+    if (!user || !newName.trim()) return;
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ full_name: newName.trim() })
+      .eq('id', user.id);
+
+    if (!error) {
+      setProfile({ ...profile, full_name: newName.trim() });
+      setShowProfileModal(false);
+      setNewName('');
+    } else {
+      alert("Error saving name: " + error.message);
+    }
+  };
+
+  // Display name logic
+  const displayName = profile?.full_name || user?.email || "User";
+
   const member = {
     name: "Tyler",
     membership: "Club Legend",
@@ -146,9 +168,6 @@ export default function NextGenAICoach() {
     setTrainingPlan(null);
   };
 
-  // Display name logic
-  const displayName = profile?.full_name || user?.email || "User";
-
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
       {/* Header */}
@@ -162,11 +181,20 @@ export default function NextGenAICoach() {
             </div>
           </div>
 
-          {/* Auth Section */}
+          {/* Auth + Profile Section */}
           <div className="flex items-center gap-4 text-sm">
             {user ? (
               <div className="flex items-center gap-3">
-                <span className="text-white/80 font-medium">{displayName}</span>
+                <button 
+                  onClick={() => {
+                    setNewName(profile?.full_name || '');
+                    setShowProfileModal(true);
+                  }}
+                  className="flex items-center gap-2 text-white/80 hover:text-white"
+                >
+                  {displayName}
+                  <Edit2 className="w-3.5 h-3.5" />
+                </button>
                 <button 
                   onClick={handleLogout}
                   className="px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-full text-sm"
@@ -252,24 +280,62 @@ export default function NextGenAICoach() {
           </div>
         )}
 
-        {/* SESSION + ANALYSIS VIEWS (kept shortened for now) */}
+        {/* SESSION + ANALYSIS VIEWS */}
         {currentView === 'session' && selectedBay && (
           <div className="max-w-2xl mx-auto">
-            {/* Session view content here */}
+            {/* Keep your existing session view code here */}
           </div>
         )}
 
         {currentView === 'analysis' && analysis && trainingPlan && (
           <div className="max-w-3xl mx-auto">
-            {/* Analysis view content here */}
+            {/* Keep your existing analysis view code here */}
           </div>
         )}
       </div>
 
+      {/* Auth Modal */}
       <AuthModal 
         isOpen={showAuthModal} 
         onClose={() => setShowAuthModal(false)} 
       />
+
+      {/* Edit Profile Modal */}
+      {showProfileModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+          <div className="bg-[#1a1a1a] rounded-2xl p-8 w-full max-w-md mx-4">
+            <h2 className="text-2xl font-semibold mb-6">Edit Profile</h2>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm text-white/70 mb-1 block">Name</label>
+                <input
+                  type="text"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  className="w-full bg-black/40 border border-white/20 rounded-xl p-4 text-white"
+                  placeholder="Enter your name"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-8">
+              <button 
+                onClick={() => setShowProfileModal(false)}
+                className="flex-1 bg-white/10 hover:bg-white/20 py-3 rounded-2xl font-medium"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={saveProfileName}
+                className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-black py-3 rounded-2xl font-semibold"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 bg-black/90 border-t border-white/10 p-2 flex justify-around text-xs">
