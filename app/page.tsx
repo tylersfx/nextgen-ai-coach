@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { parseGSProCSV } from '../lib/csvParser';
 import { analyzeSwing, generateTrainingPlan } from '../lib/analysisEngine';
-import AuthModal from '../components/AuthModal';
+import AuthModal from '@/components/AuthModal';
 
 export default function NextGenAICoach() {
   const [currentView, setCurrentView] = useState<'dashboard' | 'session' | 'analysis'>('dashboard');
@@ -112,7 +112,7 @@ export default function NextGenAICoach() {
             </div>
           </div>
 
-          {/* Login Button + Membership */}
+          {/* Login Button */}
           <div className="flex items-center gap-4 text-sm">
             <button 
               onClick={() => setShowAuthModal(true)}
@@ -130,7 +130,7 @@ export default function NextGenAICoach() {
       </header>
 
       <div className="max-w-5xl mx-auto px-6 py-8">
-        {/* DASHBOARD */}
+        {/* DASHBOARD VIEW */}
         {currentView === 'dashboard' && (
           <div>
             <div className="flex justify-between items-end mb-8">
