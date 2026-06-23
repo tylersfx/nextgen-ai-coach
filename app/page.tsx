@@ -22,19 +22,40 @@ export default function NextGenAICoach() {
   const [sessionNotes, setSessionNotes] = useState('');
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null);
 
-  // Check if user is logged in when app loads
+  // Fetch user + profile when app loads or auth changes
   useEffect(() => {
-    const getUser = async () => {
+    const getUserAndProfile = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
-    };
-    getUser();
 
-    // Listen for auth changes (login/logout)
+      if (user) {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+        setProfile(profileData);
+      }
+    };
+
+    getUserAndProfile();
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+          setProfile(profileData);
+        } else {
+          setProfile(null);
+        }
       }
     );
 
@@ -44,6 +65,7 @@ export default function NextGenAICoach() {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setUser(null);
+    setProfile(null);
   };
 
   // Simulated member data
@@ -124,6 +146,9 @@ export default function NextGenAICoach() {
     setTrainingPlan(null);
   };
 
+  // Display name logic
+  const displayName = profile?.full_name || user?.email || "User";
+
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
       {/* Header */}
@@ -141,7 +166,7 @@ export default function NextGenAICoach() {
           <div className="flex items-center gap-4 text-sm">
             {user ? (
               <div className="flex items-center gap-3">
-                <span className="text-white/80">{user.email}</span>
+                <span className="text-white/80 font-medium">{displayName}</span>
                 <button 
                   onClick={handleLogout}
                   className="px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-full text-sm"
@@ -227,16 +252,16 @@ export default function NextGenAICoach() {
           </div>
         )}
 
-        {/* SESSION + ANALYSIS VIEWS (kept the same for now) */}
+        {/* SESSION + ANALYSIS VIEWS (kept shortened for now) */}
         {currentView === 'session' && selectedBay && (
           <div className="max-w-2xl mx-auto">
-            {/* ... (keeping your existing session view code) ... */}
+            {/* Session view content here */}
           </div>
         )}
 
         {currentView === 'analysis' && analysis && trainingPlan && (
           <div className="max-w-3xl mx-auto">
-            {/* ... (keeping your existing analysis view code) ... */}
+            {/* Analysis view content here */}
           </div>
         )}
       </div>
