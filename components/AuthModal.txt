@@ -37,7 +37,6 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
         if (error) throw error;
       }
       onClose();
-      // Optional: refresh the page or update UI
       window.location.reload();
     } catch (err: any) {
       setError(err.message);
