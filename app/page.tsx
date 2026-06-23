@@ -21,7 +21,6 @@ export default function NextGenAICoach() {
   const [sessionNotes, setSessionNotes] = useState('');
   const [showAuthModal, setShowAuthModal] = useState(false);
 
-  // Simulated member data
   const member = {
     name: "Tyler",
     membership: "Club Legend",
@@ -112,7 +111,6 @@ export default function NextGenAICoach() {
             </div>
           </div>
 
-          {/* Login Button */}
           <div className="flex items-center gap-4 text-sm">
             <button 
               onClick={() => setShowAuthModal(true)}
