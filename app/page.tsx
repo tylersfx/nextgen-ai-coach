@@ -175,18 +175,15 @@ export default function NextGenAICoach() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
-      {/* Header - Improved for mobile to reduce spilling */}
+      {/* Clean Header - Logo only on left */}
       <header className="border-b border-white/10 bg-black/50 backdrop-blur-lg sticky top-0 z-50">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-3 min-w-0">
-            <img src="/logo.png" alt="NextGen Golf Lounge" className="h-9 w-9 sm:h-12 sm:w-12 flex-shrink-0" />
-            <div className="min-w-0">
-              <div className="font-semibold text-xl sm:text-2xl tracking-tight truncate">NextGen AI Coach</div>
-              <div className="text-[10px] sm:text-xs text-white/60 -mt-0.5 truncate">POWERED BY PROTEE VX + GSPRO</div>
-            </div>
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between gap-3">
+          {/* Logo only - top left */}
+          <div className="flex items-center">
+            <img src="/logo.png" alt="NextGen Golf Lounge" className="h-10 w-10 sm:h-12 sm:w-12" />
           </div>
 
-          {/* Auth + Profile Section - More compact on mobile */}
+          {/* Right side - User info + Membership */}
           <div className="flex items-center gap-2 sm:gap-4 text-sm flex-shrink-0">
             {user ? (
               <div className="flex items-center gap-2">
@@ -195,7 +192,7 @@ export default function NextGenAICoach() {
                     setNewName(profile?.full_name || '');
                     setShowProfileModal(true);
                   }}
-                  className="flex items-center gap-1.5 text-white/80 hover:text-white text-sm sm:text-base max-w-[140px] truncate"
+                  className="flex items-center gap-1.5 text-white/80 hover:text-white text-sm sm:text-base max-w-[160px] truncate"
                 >
                   <span className="truncate">{displayName}</span>
                   <Edit2 className="w-3.5 h-3.5 flex-shrink-0" />
@@ -299,16 +296,16 @@ export default function NextGenAICoach() {
           </div>
         )}
 
-        {/* SESSION + ANALYSIS VIEWS (shortened for brevity - keep your existing full code here if needed) */}
+        {/* SESSION + ANALYSIS VIEWS (keep your existing code here) */}
         {currentView === 'session' && selectedBay && (
           <div className="max-w-2xl mx-auto">
-            {/* Paste your existing session view code here */}
+            {/* Your existing session view code */}
           </div>
         )}
 
         {currentView === 'analysis' && analysis && trainingPlan && (
           <div className="max-w-3xl mx-auto">
-            {/* Paste your existing analysis view code here */}
+            {/* Your existing analysis view code */}
           </div>
         )}
       </div>
