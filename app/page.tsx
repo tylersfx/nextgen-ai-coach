@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Play, Upload, Target, Award, Calendar, 
-  TrendingUp, Users, ArrowRight, Edit2, Lock 
+  TrendingUp, Users, ArrowRight, Edit2, Lock, Star 
 } from 'lucide-react';
 import { parseGSProCSV } from '../lib/csvParser';
 import { analyzeSwing, generateTrainingPlan } from '../lib/analysisEngine';
@@ -90,6 +90,32 @@ export default function NextGenAICoach() {
 
   const displayName = profile?.full_name || user?.email || "User";
   const membershipType = profile?.membership_type || 'Club Member';
+
+  // Dynamic Membership Badge Styling
+  const getMembershipBadge = (type: string) => {
+    switch (type) {
+      case 'Club Legend':
+        return {
+          bg: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400',
+          icon: <Star className="w-3.5 h-3.5" />,
+          label: 'Club Legend'
+        };
+      case 'Club Pro':
+        return {
+          bg: 'bg-blue-500/10 border-blue-500/30 text-blue-400',
+          icon: <Award className="w-3.5 h-3.5" />,
+          label: 'Club Pro'
+        };
+      default:
+        return {
+          bg: 'bg-white/10 border-white/20 text-white/80',
+          icon: null,
+          label: type
+        };
+    }
+  };
+
+  const badge = getMembershipBadge(membershipType);
   const isClubLegend = membershipType === 'Club Legend';
 
   const member = {
@@ -175,7 +201,7 @@ export default function NextGenAICoach() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
-      {/* Clean Header - Logo only on left */}
+      {/* Clean Header - Logo only */}
       <header className="border-b border-white/10 bg-black/50 backdrop-blur-lg sticky top-0 z-50">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between gap-3">
           {/* Logo only - top left */}
@@ -183,7 +209,7 @@ export default function NextGenAICoach() {
             <img src="/logo.png" alt="NextGen Golf Lounge" className="h-10 w-10 sm:h-12 sm:w-12" />
           </div>
 
-          {/* Right side - User info + Membership */}
+          {/* Right side - User + Dynamic Membership Badge */}
           <div className="flex items-center gap-2 sm:gap-4 text-sm flex-shrink-0">
             {user ? (
               <div className="flex items-center gap-2">
@@ -213,9 +239,10 @@ export default function NextGenAICoach() {
               </button>
             )}
 
-            <div className="px-2.5 py-1 sm:px-4 sm:py-1.5 bg-white/5 rounded-full flex items-center gap-1.5 text-xs sm:text-sm whitespace-nowrap">
-              <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-emerald-400 rounded-full animate-pulse" />
-              {membershipType}
+            {/* Dynamic Membership Badge */}
+            <div className={`px-3 py-1 sm:px-4 sm:py-1.5 rounded-full flex items-center gap-1.5 text-xs sm:text-sm whitespace-nowrap border ${badge.bg}`}>
+              {badge.icon}
+              {badge.label}
             </div>
           </div>
         </div>
@@ -296,7 +323,7 @@ export default function NextGenAICoach() {
           </div>
         )}
 
-        {/* SESSION + ANALYSIS VIEWS (keep your existing code here) */}
+        {/* SESSION + ANALYSIS VIEWS (keep your existing code) */}
         {currentView === 'session' && selectedBay && (
           <div className="max-w-2xl mx-auto">
             {/* Your existing session view code */}
