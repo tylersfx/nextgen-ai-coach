@@ -50,18 +50,7 @@ export default function NextGenAICoach() {
           .order('started_at', { ascending: false })
           .limit(20);
 
-        if (sessionsData) {
-          setUserSessions(sessionsData);
-
-          if (sessionsData.length > 0) {
-            const sessionIds = sessionsData.map((s: any) => s.id);
-            const { data: shotsData } = await supabase
-              .from('shots')
-              .select('*')
-              .in('session_id', sessionIds);
-            if (shotsData) setUserShots(shotsData);
-          }
-        }
+        if (sessionsData) setUserSessions(sessionsData);
       }
     };
 
@@ -80,7 +69,6 @@ export default function NextGenAICoach() {
         } else {
           setProfile(null);
           setUserSessions([]);
-          setUserShots([]);
         }
       }
     );
@@ -93,7 +81,6 @@ export default function NextGenAICoach() {
     setUser(null);
     setProfile(null);
     setUserSessions([]);
-    setUserShots([]);
   };
 
   const saveProfileName = async () => {
@@ -127,19 +114,22 @@ export default function NextGenAICoach() {
     }
 
     try {
-      const { error } = await supabase.from('sessions').insert({
+      const { data, error } = await supabase.from('sessions').insert({
         user_id: user.id,
-        bay_number: bay,           // This should fix the null value error
+        bay_number: bay,
         started_at: new Date().toISOString(),
         ended_at: null,
-      });
+      }).select();
 
       if (error) throw error;
+
+      console.log("Pending session created:", data);
 
       setSelectedBay(bay);
       setCurrentView('bay-started');
     } catch (err: any) {
       alert("Error starting session: " + err.message);
+      console.error(err);
     }
   };
 
@@ -386,20 +376,6 @@ export default function NextGenAICoach() {
           </div>
         )}
 
-        {/* SESSION VIEW */}
-        {currentView === 'session' && selectedBay && (
-          <div className="max-w-2xl mx-auto">
-            {/* Your existing manual session view code can go here */}
-          </div>
-        )}
-
-        {/* ANALYSIS VIEW */}
-        {currentView === 'analysis' && analysis && trainingPlan && (
-          <div className="max-w-3xl mx-auto">
-            {/* Your existing analysis view code can go here */}
-          </div>
-        )}
-
         {/* MY PROGRESS VIEW */}
         {currentView === 'progress' && user && (
           <div className="max-w-4xl mx-auto">
@@ -418,15 +394,12 @@ export default function NextGenAICoach() {
         )}
       </div>
 
-      {/* Auth Modal */}
       <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
 
-      {/* Edit Profile Modal */}
       {showProfileModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
           <div className="bg-[#1a1a1a] rounded-2xl p-8 w-full max-w-md mx-4">
             <h2 className="text-2xl font-semibold mb-6">Edit Profile</h2>
-            
             <div className="space-y-4">
               <div>
                 <label className="text-sm text-white/70 mb-1 block">Name</label>
@@ -439,7 +412,6 @@ export default function NextGenAICoach() {
                 />
               </div>
             </div>
-
             <div className="flex gap-3 mt-8">
               <button onClick={() => setShowProfileModal(false)} className="flex-1 bg-white/10 hover:bg-white/20 py-3 rounded-2xl font-medium">Cancel</button>
               <button onClick={saveProfileName} className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-black py-3 rounded-2xl font-semibold">Save</button>
@@ -448,7 +420,6 @@ export default function NextGenAICoach() {
         </div>
       )}
 
-      {/* Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 bg-black/90 border-t border-white/10 p-2 flex justify-around text-xs">
         <button onClick={() => setCurrentView('dashboard')} className="flex flex-col items-center py-2 px-6 text-white/70 hover:text-white">
           <Users className="w-5 h-5 mb-0.5" /> Dashboard
