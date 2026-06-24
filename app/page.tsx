@@ -29,7 +29,6 @@ export default function NextGenAICoach() {
   const [userSessions, setUserSessions] = useState<any[]>([]);
   const [userShots, setUserShots] = useState<any[]>([]);
 
-  // Fetch user + profile + sessions/shots
   useEffect(() => {
     const getUserAndData = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -130,7 +129,7 @@ export default function NextGenAICoach() {
     try {
       const { error } = await supabase.from('sessions').insert({
         user_id: user.id,
-        bay: bay,
+        bay_number: bay,           // This should fix the null value error
         started_at: new Date().toISOString(),
         ended_at: null,
       });
@@ -420,10 +419,7 @@ export default function NextGenAICoach() {
       </div>
 
       {/* Auth Modal */}
-      <AuthModal 
-        isOpen={showAuthModal} 
-        onClose={() => setShowAuthModal(false)} 
-      />
+      <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
 
       {/* Edit Profile Modal */}
       {showProfileModal && (
@@ -442,24 +438,11 @@ export default function NextGenAICoach() {
                   placeholder="Enter your name"
                 />
               </div>
-              <div className="text-xs text-white/60">
-                Current membership: <span className="text-emerald-400">{membershipType}</span>
-              </div>
             </div>
 
             <div className="flex gap-3 mt-8">
-              <button 
-                onClick={() => setShowProfileModal(false)}
-                className="flex-1 bg-white/10 hover:bg-white/20 py-3 rounded-2xl font-medium"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={saveProfileName}
-                className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-black py-3 rounded-2xl font-semibold"
-              >
-                Save
-              </button>
+              <button onClick={() => setShowProfileModal(false)} className="flex-1 bg-white/10 hover:bg-white/20 py-3 rounded-2xl font-medium">Cancel</button>
+              <button onClick={saveProfileName} className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-black py-3 rounded-2xl font-semibold">Save</button>
             </div>
           </div>
         </div>
