@@ -9,9 +9,10 @@ import { parseGSProCSV } from '../lib/csvParser';
 import { analyzeSwing, generateTrainingPlan } from '../lib/analysisEngine';
 import AuthModal from '@/components/AuthModal';
 import { supabase } from '../lib/supabase';
+import SessionCharts from '@/components/SessionCharts';
 
 export default function NextGenAICoach() {
-  const [currentView, setCurrentView] = useState<'dashboard' | 'session' | 'analysis'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'session' | 'analysis' | 'bay-started' | 'progress'>('dashboard');
   const [selectedBay, setSelectedBay] = useState<number | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
@@ -25,10 +26,12 @@ export default function NextGenAICoach() {
   const [profile, setProfile] = useState<any>(null);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [newName, setNewName] = useState('');
+  const [userSessions, setUserSessions] = useState<any[]>([]);
+  const [userShots, setUserShots] = useState<any[]>([]);
 
-  // Fetch user + profile
+  // Fetch user + profile + sessions/shots
   useEffect(() => {
-    const getUserAndProfile = async () => {
+    const getUserAndData = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
 
@@ -39,15 +42,35 @@ export default function NextGenAICoach() {
           .eq('id', user.id)
           .single();
         setProfile(profileData);
+
+        const { data: sessionsData } = await supabase
+          .from('sessions')
+          .select('*')
+          .eq('user_id', user.id)
+          .not('ended_at', 'is', null)
+          .order('started_at', { ascending: false })
+          .limit(20);
+
+        if (sessionsData) {
+          setUserSessions(sessionsData);
+
+          if (sessionsData.length > 0) {
+            const sessionIds = sessionsData.map((s: any) => s.id);
+            const { data: shotsData } = await supabase
+              .from('shots')
+              .select('*')
+              .in('session_id', sessionIds);
+            if (shotsData) setUserShots(shotsData);
+          }
+        }
       }
     };
 
-    getUserAndProfile();
+    getUserAndData();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      async (event: any, session: any) => {
         setUser(session?.user ?? null);
-        
         if (session?.user) {
           const { data: profileData } = await supabase
             .from('profiles')
@@ -57,6 +80,8 @@ export default function NextGenAICoach() {
           setProfile(profileData);
         } else {
           setProfile(null);
+          setUserSessions([]);
+          setUserShots([]);
         }
       }
     );
@@ -68,9 +93,10 @@ export default function NextGenAICoach() {
     await supabase.auth.signOut();
     setUser(null);
     setProfile(null);
+    setUserSessions([]);
+    setUserShots([]);
   };
 
-  // Save new name
   const saveProfileName = async () => {
     if (!user || !newName.trim()) return;
 
@@ -88,34 +114,38 @@ export default function NextGenAICoach() {
     }
   };
 
-  const displayName = profile?.full_name || user?.email || "User";
-  const membershipType = profile?.membership_type || 'Club Member';
+  const startAutomaticSession = async (bay: number) => {
+    if (!user) {
+      alert("Please log in to start a session.");
+      setShowAuthModal(true);
+      return;
+    }
 
-  // Dynamic Membership Badge Styling
-  const getMembershipBadge = (type: string) => {
-    switch (type) {
-      case 'Club Legend':
-        return {
-          bg: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400',
-          icon: <Star className="w-3.5 h-3.5" />,
-          label: 'Club Legend'
-        };
-      case 'Club Pro':
-        return {
-          bg: 'bg-blue-500/10 border-blue-500/30 text-blue-400',
-          icon: <Award className="w-3.5 h-3.5" />,
-          label: 'Club Pro'
-        };
-      default:
-        return {
-          bg: 'bg-white/10 border-white/20 text-white/80',
-          icon: null,
-          label: type
-        };
+    const membershipType = profile?.membership_type || 'Club Member';
+    if (bay === 5 && membershipType !== 'Club Legend') {
+      alert("Bay 5 is available for Club Legend members only.");
+      return;
+    }
+
+    try {
+      const { error } = await supabase.from('sessions').insert({
+        user_id: user.id,
+        bay: bay,
+        started_at: new Date().toISOString(),
+        ended_at: null,
+      });
+
+      if (error) throw error;
+
+      setSelectedBay(bay);
+      setCurrentView('bay-started');
+    } catch (err: any) {
+      alert("Error starting session: " + err.message);
     }
   };
 
-  const badge = getMembershipBadge(membershipType);
+  const displayName = profile?.full_name || user?.email || "User";
+  const membershipType = profile?.membership_type || 'Club Member';
   const isClubLegend = membershipType === 'Club Legend';
 
   const member = {
@@ -129,10 +159,6 @@ export default function NextGenAICoach() {
   const bays = [1, 2, 3, 4, 5];
 
   const startSession = (bay: number) => {
-    if (bay === 5 && !isClubLegend) {
-      alert("Bay 5 is available for Club Legend members only.");
-      return;
-    }
     setSelectedBay(bay);
     setCurrentView('session');
     setVideoBlob(null);
@@ -204,12 +230,10 @@ export default function NextGenAICoach() {
       {/* Clean Header - Logo only */}
       <header className="border-b border-white/10 bg-black/50 backdrop-blur-lg sticky top-0 z-50">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between gap-3">
-          {/* Logo only - top left */}
           <div className="flex items-center">
             <img src="/logo.png" alt="NextGen Golf Lounge" className="h-10 w-10 sm:h-12 sm:w-12" />
           </div>
 
-          {/* Right side - User + Dynamic Membership Badge */}
           <div className="flex items-center gap-2 sm:gap-4 text-sm flex-shrink-0">
             {user ? (
               <div className="flex items-center gap-2">
@@ -239,10 +263,14 @@ export default function NextGenAICoach() {
               </button>
             )}
 
-            {/* Dynamic Membership Badge */}
-            <div className={`px-3 py-1 sm:px-4 sm:py-1.5 rounded-full flex items-center gap-1.5 text-xs sm:text-sm whitespace-nowrap border ${badge.bg}`}>
-              {badge.icon}
-              {badge.label}
+            <div className={`px-3 py-1 sm:px-4 sm:py-1.5 rounded-full flex items-center gap-1.5 text-xs sm:text-sm whitespace-nowrap border ${
+              membershipType === 'Club Legend' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' :
+              membershipType === 'Club Pro' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' :
+              'bg-white/10 border-white/20 text-white/80'
+            }`}>
+              {membershipType === 'Club Legend' && <Star className="w-3.5 h-3.5" />}
+              {membershipType === 'Club Pro' && <Award className="w-3.5 h-3.5" />}
+              {membershipType}
             </div>
           </div>
         </div>
@@ -291,31 +319,36 @@ export default function NextGenAICoach() {
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                 {bays.map(bay => {
                   const isBay5 = bay === 5;
-                  const canAccess = !isBay5 || isClubLegend;
+                  const canAccess = !isBay5 || membershipType === 'Club Legend';
 
                   return (
-                    <button
+                    <div 
                       key={bay}
-                      onClick={() => startSession(bay)}
-                      disabled={!canAccess}
-                      className={`group rounded-2xl p-6 sm:p-8 text-left transition-all active:scale-[0.985] border flex flex-col justify-between h-full ${
+                      className={`group rounded-2xl p-6 sm:p-8 border transition-all ${
                         canAccess 
-                          ? 'bg-white/5 hover:bg-emerald-500/10 border-white/10 hover:border-emerald-500/50' 
-                          : 'bg-white/5 border-white/10 opacity-60 cursor-not-allowed'
+                          ? 'bg-white/5 border-white/10 hover:border-emerald-500/50' 
+                          : 'bg-white/5 border-white/10 opacity-60'
                       }`}
                     >
-                      <div>
-                        <div className="flex items-center justify-between">
-                          <div className="text-5xl sm:text-6xl font-semibold text-white/90 group-hover:text-emerald-400 transition-colors">
-                            Bay {bay}
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <div className="text-5xl sm:text-6xl font-semibold text-white/90">Bay {bay}</div>
+                          <div className="text-emerald-400 text-sm mt-1">
+                            {canAccess ? "Ready now" : "Club Legend only"}
                           </div>
-                          {isBay5 && !isClubLegend && <Lock className="w-5 h-5 text-white/40" />}
                         </div>
-                        <div className="text-emerald-400 text-sm mt-1">
-                          {canAccess ? "Ready now" : "Club Legend only"}
-                        </div>
+                        {isBay5 && !canAccess && <Lock className="w-6 h-6 text-white/40" />}
                       </div>
-                    </button>
+
+                      {canAccess && (
+                        <button
+                          onClick={() => startAutomaticSession(bay)}
+                          className="w-full mt-4 bg-emerald-500 hover:bg-emerald-600 text-black font-semibold py-3 rounded-2xl text-sm"
+                        >
+                          Start Automatic Session
+                        </button>
+                      )}
+                    </div>
                   );
                 })}
               </div>
@@ -323,16 +356,65 @@ export default function NextGenAICoach() {
           </div>
         )}
 
-        {/* SESSION + ANALYSIS VIEWS (keep your existing code) */}
-        {currentView === 'session' && selectedBay && (
-          <div className="max-w-2xl mx-auto">
-            {/* Your existing session view code */}
+        {/* BAY STARTED VIEW */}
+        {currentView === 'bay-started' && selectedBay && (
+          <div className="max-w-md mx-auto text-center py-12">
+            <div className="text-emerald-400 text-6xl mb-6">✓</div>
+            <h2 className="text-3xl font-semibold mb-4">Session Started on Bay {selectedBay}</h2>
+            <p className="text-xl text-white/80 mb-8">
+              Go play in GSPro.<br />
+              Your shot data will be saved automatically when you finish.
+            </p>
+
+            <div className="bg-white/5 rounded-2xl p-6 text-left mb-8">
+              <div className="font-medium mb-2">What happens next:</div>
+              <ul className="text-sm text-white/70 space-y-1.5">
+                <li>• Play your session or round in GSPro</li>
+                <li>• When you finish, GSPro will export the data</li>
+                <li>• Your results + AI analysis will appear in "My Progress"</li>
+              </ul>
+            </div>
+
+            <button 
+              onClick={() => {
+                setCurrentView('dashboard');
+                setSelectedBay(null);
+              }}
+              className="text-emerald-400 hover:text-emerald-300"
+            >
+              Back to Dashboard
+            </button>
           </div>
         )}
 
+        {/* SESSION VIEW */}
+        {currentView === 'session' && selectedBay && (
+          <div className="max-w-2xl mx-auto">
+            {/* Your existing manual session view code can go here */}
+          </div>
+        )}
+
+        {/* ANALYSIS VIEW */}
         {currentView === 'analysis' && analysis && trainingPlan && (
           <div className="max-w-3xl mx-auto">
-            {/* Your existing analysis view code */}
+            {/* Your existing analysis view code can go here */}
+          </div>
+        )}
+
+        {/* MY PROGRESS VIEW */}
+        {currentView === 'progress' && user && (
+          <div className="max-w-4xl mx-auto">
+            <div className="flex justify-between items-center mb-8">
+              <div>
+                <h2 className="text-4xl font-semibold">My Progress</h2>
+                <p className="text-white/70">Your performance trends from GSPro sessions</p>
+              </div>
+              <button onClick={() => setCurrentView('dashboard')} className="text-emerald-400">
+                ← Back
+              </button>
+            </div>
+
+            <SessionCharts sessions={userSessions} shots={userShots} />
           </div>
         )}
       </div>
@@ -390,6 +472,9 @@ export default function NextGenAICoach() {
         </button>
         <button onClick={() => setCurrentView('session')} className="flex flex-col items-center py-2 px-6 text-white/70 hover:text-white">
           <Play className="w-5 h-5 mb-0.5" /> New Session
+        </button>
+        <button onClick={() => setCurrentView('progress')} className="flex flex-col items-center py-2 px-6 text-white/70 hover:text-white">
+          <TrendingUp className="w-5 h-5 mb-0.5" /> My Progress
         </button>
         <button className="flex flex-col items-center py-2 px-6 text-white/70 hover:text-white">
           <Calendar className="w-5 h-5 mb-0.5" /> My Plan
